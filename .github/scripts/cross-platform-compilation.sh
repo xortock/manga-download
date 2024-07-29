@@ -1,6 +1,7 @@
 #!/bin/bash
 
 package=$1
+binary_name=$2
 if [[ -z "$package" ]]; then
   echo "usage: $0 <package-name>"
   exit 1
@@ -15,11 +16,10 @@ do
 	platform_split=(${platform//\// })
 	GOOS=${platform_split[0]}
 	GOARCH=${platform_split[1]}
-	output_name=$package_name'-'$GOOS'-'$GOARCH
+	output_name=$binary_name'-'$GOOS'-'$GOARCH
 	if [ $GOOS = "windows" ]; then
 		output_name+='.exe'
 	fi	
-
 	export GOOS=$GOOS 
     export GOARCH=$GOARCH 
     go build -o ./bin/$output_name $package
