@@ -27,11 +27,12 @@ jobs:
           run: | 
             chmod --recursive 744 ../.github/scripts/
             ../.github/scripts/cross-platform-compilation.sh main.go manga-dl
+            ls -la
 
         - uses: actions/upload-artifact@v4
           with:
             name: manga-download
-            path: bin/
+            path: ./bin/
 
     deploy:
         name: 'deploy'
@@ -54,7 +55,7 @@ jobs:
         - uses: actions/download-artifact@v4
           with:
             name: manga-download
-            path: bin/
+            path: ./bin/
       
         - name: Create Release & Upload Release assets
           uses: softprops/action-gh-release@v2
