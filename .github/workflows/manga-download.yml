@@ -27,7 +27,7 @@ jobs:
           run: | 
             chmod --recursive 744 ../.github/scripts/
             ../.github/scripts/cross-platform-compilation.sh main.go manga-dl
-            ls -la
+            ls -la ./bin/
 
         - uses: actions/upload-artifact@v4
           with:
@@ -37,20 +37,23 @@ jobs:
     deploy:
         name: 'deploy'
         runs-on: ubuntu-latest
+        defaults:
+          run:
+            working-directory: ./manga-download
         needs: build
         steps:
         - name: 'Checkout'
           uses: actions/checkout@main
         
-        - name: Approve deployment
-          if: github.event_name != 'pull_request'
-          uses: trstringer/manual-approval@v1
-          with:
-            secret: ${{ secrets.GITHUB_TOKEN }}
-            approvers: xortock
-            minimum-approvals: 1
-            issue-title: "Apply terraform plan"
-            issue-body: "Please approve or deny the deployment of the terraform plan"
+        # - name: Approve deployment
+        #   if: github.event_name != 'pull_request'
+        #   uses: trstringer/manual-approval@v1
+        #   with:
+        #     secret: ${{ secrets.GITHUB_TOKEN }}
+        #     approvers: xortock
+        #     minimum-approvals: 1
+        #     issue-title: "Apply terraform plan"
+        #     issue-body: "Please approve or deny the deployment of the terraform plan"
 
         - uses: actions/download-artifact@v4
           with:
