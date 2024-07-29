@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/sh
 
 package=$1
 if [[ -z "$package" ]]; then
