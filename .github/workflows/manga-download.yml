@@ -25,7 +25,7 @@ jobs:
     
         - name: Cross platform compilation
           run: | 
-            chmod --recursive 744 ./.github/scripts/
+            chmod --recursive 744 ../.github/scripts/
             ../.github/scripts/cross-platform-compilation.sh main.go manga-dl
 
         - uses: actions/upload-artifact@v4
