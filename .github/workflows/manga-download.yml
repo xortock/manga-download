@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
     
+env:
+  VERSION: 0.1.0
+
 jobs:
     build:
         name: 'build'
@@ -26,7 +29,7 @@ jobs:
         - name: Cross platform compilation
           run: | 
             chmod --recursive 744 ../.github/scripts/
-            ../.github/scripts/cross-platform-compilation.sh ./main.go manga-dl
+            ../.github/scripts/cross-platform-compilation.sh ./main.go manga-dl $VERSION
         # Default working directory does not apply to the upload artifact action
         - uses: actions/upload-artifact@v4
           with:
@@ -55,16 +58,18 @@ jobs:
             issue-body: "Please approve or deny the deployment of the terraform plan"
 
         - uses: actions/download-artifact@v4
+          if: github.event_name != 'pull_request'
           with:
             name: manga-download
             path: ./bin/
       
         - name: Create Release & Upload Release assets
+          if: github.event_name != 'pull_request'
           uses: softprops/action-gh-release@v2
           with:
-            tag_name: v0.1.0
+            tag_name: v$VERSION
             body: |
-              In the v0.1.0 release cycle the focus was building the core functionality of this cli tool
+              In the v$VERSION release cycle the focus was building the core functionality of this cli tool
             draft: true
             prerelease: false
             files: |

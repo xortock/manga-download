@@ -8,13 +8,13 @@ import (
 	"github.com/xortock/mangafire-download/handlers"
 )
 
-var version = "1.0.0.0"
+var version = "0.1.0.0"
 
 func main() {
 	var cliHandler = handlers.NewCliHandler()
-	
+
 	var app = &cli.App{
-		Name: "semanticloq",
+		Name:    "semanticloq",
 		Version: version,
 		Authors: []cli.Author{
 			{
@@ -22,8 +22,8 @@ func main() {
 				Email: "bgmaduro@gmail.com",
 			},
 		},
-		Copyright:       "(C) 2024 xortock",
-		HideHelp:        true,
+		Copyright: "(C) 2024 xortock",
+		HideHelp:  true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     flags.CODE,
