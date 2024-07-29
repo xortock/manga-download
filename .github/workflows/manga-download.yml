@@ -5,6 +5,79 @@ on:
       - main
   pull_request:
   workflow_dispatch:
-
-
     
+env:
+  VERSION: 0.1.0
+
+jobs:
+    build:
+        name: 'build'
+        runs-on: ubuntu-latest
+        defaults:
+          run:
+            working-directory: ./manga-download
+        steps:
+        - name: 'Checkout'
+          uses: actions/checkout@main
+
+        - name: Setup Go 1.21.x
+          uses: actions/setup-go@v4
+          with:
+            # Semantic version range syntax or exact version of Go
+            go-version: '1.21.x'
+    
+        - name: Cross platform compilation
+          run: | 
+            chmod --recursive 744 ../.github/scripts/
+            ../.github/scripts/cross-platform-compilation.sh ./main.go manga-dl $VERSION
+        # Default working directory does not apply to the upload artifact action
+        - uses: actions/upload-artifact@v4
+          with:
+            name: manga-download
+            path: ./manga-download/bin/
+
+    deploy:
+        name: 'deploy'
+        runs-on: ubuntu-latest
+        defaults:
+          run:
+            working-directory: ./manga-download
+        needs: build
+        steps:
+        - name: 'Checkout'
+          uses: actions/checkout@main
+        
+        - name: Approve deployment
+          if: github.event_name != 'pull_request'
+          uses: trstringer/manual-approval@v1
+          with:
+            secret: ${{ secrets.GITHUB_TOKEN }}
+            approvers: xortock
+            minimum-approvals: 1
+            issue-title: "Apply terraform plan"
+            issue-body: "Please approve or deny the deployment of the terraform plan"
+
+        - uses: actions/download-artifact@v4
+          if: github.event_name != 'pull_request'
+          with:
+            name: manga-download
+            path: ./bin/
+      
+        - name: Create Release & Upload Release assets
+          if: github.event_name != 'pull_request'
+          uses: softprops/action-gh-release@v2
+          with:
+            tag_name: v${{ env.VERSION }}
+            body: |
+              In the v${{ env.VERSION }} release cycle the focus was building the core functionality of this cli tool
+            draft: true
+            prerelease: false
+            files: |
+              bin/manga-dl-windows-amd64.exe
+              bin/manga-dl-windows-386.exe
+              bin/manga-dl-linux-amd64
+              bin/manga-dl-linux-386
+              bin/manga-dl-linux-arm64
+              bin/manga-dl-linux-arm
+          
+            
