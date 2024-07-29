@@ -79,5 +79,3 @@ jobs:
               bin/manga-dl-linux-386
               bin/manga-dl-linux-arm64
               bin/manga-dl-linux-arm
-          
-            
