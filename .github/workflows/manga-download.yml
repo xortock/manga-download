@@ -67,9 +67,9 @@ jobs:
           if: github.event_name != 'pull_request'
           uses: softprops/action-gh-release@v2
           with:
-            tag_name: v$VERSION
+            tag_name: v${{ env.VERSION }}
             body: |
-              In the v$VERSION release cycle the focus was building the core functionality of this cli tool
+              In the v${{ env.VERSION }} release cycle the focus was building the core functionality of this cli tool
             draft: true
             prerelease: false
             files: |
