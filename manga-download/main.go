@@ -14,7 +14,7 @@ func main() {
 	var cliHandler = handlers.NewCliHandler()
 
 	var app = &cli.App{
-		Name:    "semanticloq",
+		Name:    "manga-dl",
 		Version: version,
 		Authors: []cli.Author{
 			{
