@@ -8,7 +8,7 @@ on:
     
 jobs:
     build:
-        name: 'manga-download'
+        name: 'build'
         runs-on: ubuntu-latest
         steps:
         - name: 'Checkout'
@@ -22,6 +22,7 @@ jobs:
     
         - name: Cross platform compilation
           run: | 
+            chmod --recursive 744 ./.github/scripts/
             ./.github/scripts/cross-platform-compilation.sh ./main.go manga-dl
 
         - uses: actions/upload-artifact@v4
@@ -30,7 +31,7 @@ jobs:
             path: bin/
 
     deploy:
-        name: 'manga-download'
+        name: 'deploy'
         runs-on: ubuntu-latest
         steps:
         - name: 'Checkout'
