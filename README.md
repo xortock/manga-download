@@ -9,5 +9,5 @@ The binaries for this cli tool can be download from the [releases](https://githu
 
 #### linux
 ```
-curl -L https://github.com/xortock/manga-download/releases/download/v0.1.0/manga-dl-linux-amd64 > /usr/local/bin/
+curl -L https://github.com/xortock/manga-download/releases/download/v0.1.0/manga-dl-linux-amd64 -o ./manga-dl && sudo mv ./manga-dl /usr/local/bin/ && chmod +x /usr/local/bin/manga-dl
 ```
