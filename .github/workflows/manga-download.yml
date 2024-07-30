@@ -50,6 +50,7 @@ jobs:
         - name: Approve deployment
           if: github.event_name != 'pull_request'
           uses: trstringer/manual-approval@v1
+          timeout-minutes: 10
           with:
             secret: ${{ secrets.GITHUB_TOKEN }}
             approvers: xortock
