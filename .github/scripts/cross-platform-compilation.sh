@@ -22,7 +22,7 @@ do
 	fi	
 	export GOOS=$GOOS 
     export GOARCH=$GOARCH 
-    go build -o ./bin/$output_name -ldflags "-X main.version=$3" $package
+    go build -o ./bin/$output_name -ldflags '-X main.version=$3 -extldflags "-static"' $package
 	if [ $? -ne 0 ]; then
    		echo 'An error has occurred! Aborting the script execution...'
 		exit 1
