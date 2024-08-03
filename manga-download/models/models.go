@@ -1,12 +1,12 @@
 package models
 
-type Chapter struct {
+type Division struct {
 	Number float64
-	Id int
+	Id     int
 }
 
 type ChapterApiResult struct {
-	Status int `json:"status"`
+	Status int                   `json:"status"`
 	Result ChapterApiImageResult `json:"result"`
 }
 
@@ -15,12 +15,11 @@ type ChapterApiImageResult struct {
 }
 
 type ChaptersApiResult struct {
-	Status int `json:"status"`
+	Status     int                   `json:"status"`
 	HtmlResult ChaptersApiHtmlResult `json:"result"`
-
 }
 
 type ChaptersApiHtmlResult struct {
 	HtmlContent string `json:"html"`
-    TitleFormat string `json:"title_format"`
+	TitleFormat string `json:"title_format"`
 }
