@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/urfave/cli/v2"
 	"github.com/xortock/mangafire-download/constants"
 	"github.com/xortock/mangafire-download/services"
@@ -31,13 +32,13 @@ func (handler *CliHandler) Handle(context *cli.Context) error {
 	var fileType = context.String(constants.FLAG_TYPE)
 	var errTypeFlag = validators.ValidateTypeFlag(validators.TypeFlag{Value: fileType})
 	if errTypeFlag != nil {
-		return cli.Exit(styles.RenderFailed(errors.Wrap(errTypeFlag, "--"+constants.FLAG_TYPE).Error()), 1)
+		return cli.Exit(styles.RenderFailed(fmt.Errorf("--"+constants.FLAG_DIVISION + " %w", errTypeFlag).Error()), 1)
 	}
 
 	var divisionType = context.String(constants.FLAG_DIVISION)
 	var errDivisionFlag = validators.ValidateDivisionFlag(validators.DivisionFlag{Value: divisionType})
 	if errDivisionFlag != nil {
-		return cli.Exit(styles.RenderFailed(errors.Wrap(errDivisionFlag, "--"+constants.FLAG_DIVISION).Error()), 1)
+		return cli.Exit(styles.RenderFailed(fmt.Errorf("--"+constants.FLAG_DIVISION + " %w", errDivisionFlag).Error()), 1)
 	}
 
 	var err = handler.mangaService.Download(mangaName, mangaCode, outputPath, fileType, divisionType)

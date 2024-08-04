@@ -25,7 +25,6 @@ func main() {
 			},
 		},
 		Copyright: "(C) 2024 xortock",
-		HideHelp:  true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     constants.FLAG_CODE,

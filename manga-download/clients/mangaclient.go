@@ -3,8 +3,10 @@ package clients
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -22,15 +24,16 @@ type IMangaClient interface {
 }
 
 type MangaClient struct {
-	httpClient *http.Client
+	httpClient  *http.Client
+	baseAddress string
 }
 
 func NewMangaClient() *MangaClient {
 	return &MangaClient{
-		httpClient: &http.Client{},
+		httpClient:  &http.Client{},
+		baseAddress: constants.URI_MANGA_FIRE,
 	}
 }
-
 
 func (client *MangaClient) GetDivisions(division string, mangaCode string) ([]models.Division, error) {
 	var divisions []models.Division
@@ -49,7 +52,7 @@ func (client *MangaClient) GetDivisions(division string, mangaCode string) ([]mo
 		}
 		divisions = tempVolumes
 	default:
-		return nil ,errors.New(division + " division type not supported")
+		return nil, errors.New(division + " division type not supported")
 	}
 
 	slices.Reverse(divisions)
@@ -57,20 +60,22 @@ func (client *MangaClient) GetDivisions(division string, mangaCode string) ([]mo
 }
 
 func (client *MangaClient) GetDivisionsInternal(mangaCode string, division string) ([]models.Division, error) {
+	var url, errUrl = url.JoinPath(client.baseAddress, "ajax/read", mangaCode, division, "en")
+	if errUrl != nil {
+		return nil, errUrl
+	}
 
-	var request, errRequest = http.NewRequest("GET", constants.URI_MANGA_FIRE+"ajax/read/"+mangaCode+"/"+division+"/en", nil)
+	var request, errRequest = http.NewRequest("GET", url, nil)
 	if errRequest != nil {
 		return []models.Division{}, errors.New("error: failed to create http request")
 	}
 
-	request.Header = http.Header{
-		"User-Agent": {constants.MOZILLA_USER_AGENT},
-	}
+	request.Header = http.Header{"User-Agent": {constants.MOZILLA_USER_AGENT}}
 
 	var response, err = client.httpClient.Do(request)
 	var isSuccessStatusCode = extensions.IsSuccessStatusCode(response)
 	if err != nil || !isSuccessStatusCode {
-		return []models.Division{}, errors.New("error: failed to retrieve manga chapters status code: " + strconv.Itoa(response.StatusCode) + " " + http.StatusText(response.StatusCode))
+		return []models.Division{}, errors.New(fmt.Sprint("error: failed to retrieve manga chapters status code: ", strconv.Itoa(response.StatusCode), " ", http.StatusText(response.StatusCode)))
 	}
 
 	defer response.Body.Close()
@@ -158,27 +163,29 @@ func (client *MangaClient) GetDivisionsUris(division string, divisionId int) ([]
 		}
 		divisionsUris = chapterUris
 	default:
-		return nil ,errors.New(division + " division type not supported")
+		return nil, errors.New(division + " division type not supported")
 	}
 
 	return divisionsUris, nil
 }
 
 func (client *MangaClient) GetDivisionUrisInternal(chapterId int, division string) ([]string, error) {
+	var url, errUrl = url.JoinPath(client.baseAddress, "ajax/read", division, strconv.Itoa(chapterId))
+	if errUrl != nil {
+		return nil, errUrl
+	}
 
-	var request, errRequest = http.NewRequest("GET", constants.URI_MANGA_FIRE+"/ajax/read/"+division+"/"+strconv.Itoa(chapterId), nil)
+	var request, errRequest = http.NewRequest("GET", url, nil)
 	if errRequest != nil {
 		return []string{}, errors.New("error: failed to create http request")
 	}
 
-	request.Header = http.Header{
-		"User-Agent": {constants.MOZILLA_USER_AGENT},
-	}
+	request.Header = http.Header{"User-Agent": {constants.MOZILLA_USER_AGENT}}
 
 	var response, err = client.httpClient.Do(request)
 	var isSuccessStatusCode = extensions.IsSuccessStatusCode(response)
 	if err != nil || !isSuccessStatusCode {
-		return []string{}, errors.New("error: failed to retrieve manga chapters uri status code: " + strconv.Itoa(response.StatusCode) + " " + http.StatusText(response.StatusCode))
+		return []string{}, errors.New(fmt.Sprint("error: failed to retrieve manga chapters uri status code: ", strconv.Itoa(response.StatusCode), " ", http.StatusText(response.StatusCode)))
 	}
 
 	defer response.Body.Close()
@@ -204,20 +211,22 @@ func (client *MangaClient) GetDivisionUrisInternal(chapterId int, division strin
 }
 
 func (client *MangaClient) GetDivisionImages(uri string) ([]byte, error) {
+	var url, errUrl = url.Parse(uri)
+	if errUrl != nil {
+		return nil, fmt.Errorf("invalid uri passed %w", errUrl)
+	}
 
-	var request, errRequest = http.NewRequest("GET", uri, nil)
+	var request, errRequest = http.NewRequest("GET", url.String(), nil)
 	if errRequest != nil {
 		return []byte{}, errors.New("error: failed to create http request")
 	}
 
-	request.Header = http.Header{
-		"User-Agent": {constants.MOZILLA_USER_AGENT},
-	}
+	request.Header = http.Header{"User-Agent": {constants.MOZILLA_USER_AGENT}}
 
 	var response, err = client.httpClient.Do(request)
 	var isSuccessStatusCode = extensions.IsSuccessStatusCode(response)
 	if err != nil || !isSuccessStatusCode {
-		return []byte{}, errors.New("error: failed to retrieve manga image status code: " + strconv.Itoa(response.StatusCode) + " " + http.StatusText(response.StatusCode))
+		return []byte{}, errors.New(fmt.Sprint("error: failed to retrieve manga image status code: ", strconv.Itoa(response.StatusCode), " ", http.StatusText(response.StatusCode)))
 	}
 
 	defer response.Body.Close()

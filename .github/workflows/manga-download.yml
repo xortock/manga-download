@@ -38,6 +38,7 @@ jobs:
 
     deploy:
         name: 'deploy'
+        if: github.event_name != 'pull_request'
         runs-on: ubuntu-latest
         defaults:
           run:
@@ -48,7 +49,6 @@ jobs:
           uses: actions/checkout@main
         
         - name: Approve deployment
-          if: github.event_name != 'pull_request'
           uses: trstringer/manual-approval@v1
           timeout-minutes: 10
           with:
@@ -59,13 +59,11 @@ jobs:
             issue-body: "Please approve or deny the deployment of the terraform plan"
 
         - uses: actions/download-artifact@v4
-          if: github.event_name != 'pull_request'
           with:
             name: manga-download
             path: ./bin/
       
         - name: Create Release & Upload Release assets
-          if: github.event_name != 'pull_request'
           uses: softprops/action-gh-release@v2
           with:
             tag_name: v${{ env.VERSION }}
