@@ -1,32 +1,49 @@
 package handlers
 
 import (
-	"github.com/urfave/cli"
-	"github.com/xortock/mangafire-download/flags"
+	"github.com/pkg/errors"
+	"github.com/urfave/cli/v2"
+	"github.com/xortock/mangafire-download/constants"
 	"github.com/xortock/mangafire-download/services"
+	"github.com/xortock/mangafire-download/styles"
+	"github.com/xortock/mangafire-download/validators"
 )
 
-
 type ICliHandler interface {
+	Handle(context *cli.Context) error
 }
 
 type CliHandler struct {
-	mangaService services.MangaService
+	mangaService services.IMangaService
 }
-
 
 func NewCliHandler() *CliHandler {
 	return &CliHandler{
-		mangaService: *services.NewMangaService(),
+		mangaService: services.NewMangaService(),
 	}
 }
 
 func (handler *CliHandler) Handle(context *cli.Context) error {
-	var mangaCode = context.String(flags.CODE)
-	var mangaName = context.String(flags.NAME)
-	var outputPath = context.String(flags.OUTPUTPATH)
-	// assert that output path end with \
-	handler.mangaService.Download(mangaName, mangaCode, outputPath)
+	var mangaCode = context.String(constants.FLAG_CODE)
+	var mangaName = context.String(constants.FLAG_NAME)
+	var outputPath = context.String(constants.FLAG_OUTPUTPATH)
 
-	return cli.NewExitError("download completed", 0)
+	var fileType = context.String(constants.FLAG_TYPE)
+	var errTypeFlag = validators.ValidateTypeFlag(validators.TypeFlag{Value: fileType})
+	if errTypeFlag != nil {
+		return cli.Exit(styles.RenderFailed(errors.Wrap(errTypeFlag, "--"+constants.FLAG_TYPE).Error()), 1)
+	}
+
+	var divisionType = context.String(constants.FLAG_DIVISION)
+	var errDivisionFlag = validators.ValidateDivisionFlag(validators.DivisionFlag{Value: divisionType})
+	if errDivisionFlag != nil {
+		return cli.Exit(styles.RenderFailed(errors.Wrap(errDivisionFlag, "--"+constants.FLAG_DIVISION).Error()), 1)
+	}
+
+	var err = handler.mangaService.Download(mangaName, mangaCode, outputPath, fileType, divisionType)
+	if err != nil {
+		return cli.Exit(styles.RenderFailed(err.Error()), 1)
+	}
+
+	return nil
 }

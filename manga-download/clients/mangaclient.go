@@ -2,58 +2,98 @@ package clients
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
-	"github.com/urfave/cli/v2"
+	"github.com/xortock/mangafire-download/constants"
+	"github.com/xortock/mangafire-download/extensions"
 	"github.com/xortock/mangafire-download/models"
-	"github.com/xortock/mangafire-download/uris"
 	"golang.org/x/net/html"
 )
 
 type IMangaClient interface {
+	GetDivisionsUris(division string, divisionId int) ([]string, error)
+	GetDivisions(division string, mangaCode string) ([]models.Division, error)
+	GetDivisionImages(uri string) ([]byte, error)
 }
 
 type MangaClient struct {
-	httpClient http.Client
+	httpClient *http.Client
 }
 
 func NewMangaClient() *MangaClient {
 	return &MangaClient{
-		httpClient: http.Client{},
+		httpClient: &http.Client{},
 	}
 }
 
-func (client *MangaClient) GetChapters(mangaCode string) []models.Chapter {
 
-	var response, err = client.httpClient.Get(uris.MANGA_FIRE + "ajax/read/" + mangaCode + "/chapter/en")
-	if err != nil {
-		cli.Exit("Error: Failed to retrieve manga chapters", 1)
+func (client *MangaClient) GetDivisions(division string, mangaCode string) ([]models.Division, error) {
+	var divisions []models.Division
+
+	switch division {
+	case constants.DIVISION_CHAPTER:
+		var tempChapters, err = client.GetDivisionsInternal(mangaCode, constants.DIVISION_CHAPTER)
+		if err != nil {
+			return nil, err
+		}
+		divisions = tempChapters
+	case constants.DVISION_VOLUME:
+		var tempVolumes, err = client.GetDivisionsInternal(mangaCode, constants.DVISION_VOLUME)
+		if err != nil {
+			return nil, err
+		}
+		divisions = tempVolumes
+	default:
+		return nil ,errors.New(division + " division type not supported")
+	}
+
+	slices.Reverse(divisions)
+	return divisions, nil
+}
+
+func (client *MangaClient) GetDivisionsInternal(mangaCode string, division string) ([]models.Division, error) {
+
+	var request, errRequest = http.NewRequest("GET", constants.URI_MANGA_FIRE+"ajax/read/"+mangaCode+"/"+division+"/en", nil)
+	if errRequest != nil {
+		return []models.Division{}, errors.New("error: failed to create http request")
+	}
+
+	request.Header = http.Header{
+		"User-Agent": {constants.MOZILLA_USER_AGENT},
+	}
+
+	var response, err = client.httpClient.Do(request)
+	var isSuccessStatusCode = extensions.IsSuccessStatusCode(response)
+	if err != nil || !isSuccessStatusCode {
+		return []models.Division{}, errors.New("error: failed to retrieve manga chapters status code: " + strconv.Itoa(response.StatusCode) + " " + http.StatusText(response.StatusCode))
 	}
 
 	defer response.Body.Close()
 	var body, errBody = io.ReadAll(response.Body)
 	if errBody != nil {
-		cli.Exit("Error: Failed to read request body", 1)
+		return []models.Division{}, errors.New("error: failed to read request body")
 	}
 
 	var chaptersApiResult models.ChaptersApiResult
 	var errJson = json.Unmarshal(body, &chaptersApiResult)
 	if errJson != nil {
-		cli.Exit("Error: Failed to deserialize request body", 1)
+		return []models.Division{}, errors.New("error: failed to deserialize request body")
 	}
 
 	document, err := html.Parse(strings.NewReader(chaptersApiResult.HtmlResult.HtmlContent))
 	if err != nil {
-		cli.Exit("Error: Failed to parse response to html", 1)
+		return []models.Division{}, errors.New("error: failed to parse response to html")
 	}
 
 	var matchingNodes = FindDescendants(document, "a")
 
 	// check for matching attributes
-	var chapters = []models.Chapter{}
+	var chapters = []models.Division{}
 	for _, node := range matchingNodes {
 
 		var numberAsString string
@@ -71,14 +111,14 @@ func (client *MangaClient) GetChapters(mangaCode string) []models.Chapter {
 		var number, _ = strconv.ParseFloat(numberAsString, 64)
 		var id, _ = strconv.Atoi(idAsString)
 
-		var chapter = models.Chapter{
+		var chapter = models.Division{
 			Number: number,
 			Id:     id,
 		}
 		chapters = append(chapters, chapter)
 	}
 
-	return chapters
+	return chapters, nil
 }
 
 func FindDescendants(node *html.Node, tag string) []html.Node {
@@ -101,23 +141,56 @@ func FindDescendants(node *html.Node, tag string) []html.Node {
 	return matchingNodes
 }
 
-func (client *MangaClient) GetChapterUris(chapterId int) []string {
+func (client *MangaClient) GetDivisionsUris(division string, divisionId int) ([]string, error) {
+	var divisionsUris []string
 
-	var response, err = client.httpClient.Get(uris.MANGA_FIRE + "/ajax/read/chapter/" + strconv.Itoa(chapterId))
-	if err != nil {
-		cli.Exit("Error: Failed to retrieve manga chapters", 1)
+	switch division {
+	case constants.DIVISION_CHAPTER:
+		var chapterUris, err = client.GetDivisionUrisInternal(divisionId, constants.DIVISION_CHAPTER)
+		if err != nil {
+			return nil, err
+		}
+		divisionsUris = chapterUris
+	case constants.DVISION_VOLUME:
+		var chapterUris, err = client.GetDivisionUrisInternal(divisionId, constants.DVISION_VOLUME)
+		if err != nil {
+			return nil, err
+		}
+		divisionsUris = chapterUris
+	default:
+		return nil ,errors.New(division + " division type not supported")
+	}
+
+	return divisionsUris, nil
+}
+
+func (client *MangaClient) GetDivisionUrisInternal(chapterId int, division string) ([]string, error) {
+
+	var request, errRequest = http.NewRequest("GET", constants.URI_MANGA_FIRE+"/ajax/read/"+division+"/"+strconv.Itoa(chapterId), nil)
+	if errRequest != nil {
+		return []string{}, errors.New("error: failed to create http request")
+	}
+
+	request.Header = http.Header{
+		"User-Agent": {constants.MOZILLA_USER_AGENT},
+	}
+
+	var response, err = client.httpClient.Do(request)
+	var isSuccessStatusCode = extensions.IsSuccessStatusCode(response)
+	if err != nil || !isSuccessStatusCode {
+		return []string{}, errors.New("error: failed to retrieve manga chapters uri status code: " + strconv.Itoa(response.StatusCode) + " " + http.StatusText(response.StatusCode))
 	}
 
 	defer response.Body.Close()
 	var body, errBody = io.ReadAll(response.Body)
 	if errBody != nil {
-		cli.Exit("Error: Failed to read request body", 1)
+		return []string{}, errors.New("error: failed to read request body")
 	}
 
 	var chapterApiResult models.ChapterApiResult
 	var errJson = json.Unmarshal(body, &chapterApiResult)
 	if errJson != nil {
-		cli.Exit("Error: Failed to deserialize request body", 1)
+		return []string{}, errors.New("error: failed to deserialize request body")
 	}
 
 	var uris []string
@@ -127,21 +200,31 @@ func (client *MangaClient) GetChapterUris(chapterId int) []string {
 		uris = append(uris, items[0].(string))
 	}
 
-	return uris
+	return uris, nil
 }
 
-func (client *MangaClient) GetChapterImages(uri string) []byte {
+func (client *MangaClient) GetDivisionImages(uri string) ([]byte, error) {
 
-	var response, err = client.httpClient.Get(uri)
-	if err != nil {
-		cli.Exit("Error: Failed to retrieve manga chapters", 1)
+	var request, errRequest = http.NewRequest("GET", uri, nil)
+	if errRequest != nil {
+		return []byte{}, errors.New("error: failed to create http request")
+	}
+
+	request.Header = http.Header{
+		"User-Agent": {constants.MOZILLA_USER_AGENT},
+	}
+
+	var response, err = client.httpClient.Do(request)
+	var isSuccessStatusCode = extensions.IsSuccessStatusCode(response)
+	if err != nil || !isSuccessStatusCode {
+		return []byte{}, errors.New("error: failed to retrieve manga image status code: " + strconv.Itoa(response.StatusCode) + " " + http.StatusText(response.StatusCode))
 	}
 
 	defer response.Body.Close()
 	var body, errBody = io.ReadAll(response.Body)
 	if errBody != nil {
-		cli.Exit("Error: Failed to read request body", 1)
+		return []byte{}, errors.New("error: failed to read request body")
 	}
 
-	return body
+	return body, nil
 }
